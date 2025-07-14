@@ -1,39 +1,22 @@
 version: 0.2
 
-cache:
-  paths:
-    - '/root/terraform/'          # Cache Terraform binary
-    - '/root/.cache/wget'         # Cache downloaded files (optional)
-
 phases:
-  install:
-    runtime-versions:
-      python: 3.8
+  pre_build:
     commands:
-      - echo Installing Terraform...
-
-      # Create directory to store cached terraform
-      - mkdir -p /root/terraform
-
-      # Check if terraform already exists
-      - if [ ! -f /root/terraform/terraform ]; then
-          echo "Terraform not cached. Downloading...";
-          yum install -y unzip wget;
-          wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -P /root/terraform/;
-          unzip /root/terraform/terraform_1.5.7_linux_amd64.zip -d /root/terraform/;
-        else
-          echo "Terraform found in cache.";
-        fi
-
-      # Add to path
-      - export PATH=$PATH:/root/terraform
+      - echo "Environment ready!"
       - terraform --version
-
+      - ansible --version
+      - echo "Downloading dynamic tfvars from S3..."
+      - aws s3 cp s3://splunk-deployment-test/$TFVARS_S3_KEY terraform.tfvars
+      - echo "Pre-build phase complete."
+      
   pre_build:
     commands:
       - echo "Downloading dynamic tfvars from S3..."
       - aws s3 cp s3://splunk-deployment-test/$TFVARS_S3_KEY terraform.tfvars
       - echo "Pre-build phase complete."
+      - export INSTANCE_ID=$(terraform output -raw instance_id)
+      - echo $INSTANCE_ID > instance_id.txt
 
   build:
     commands:
@@ -44,3 +27,5 @@ phases:
   post_build:
     commands:
       - echo "EC2 Splunk Deployment Completed Successfully!"
+      - chmod +x scripts/stop_instance.sh
+      - ./scripts/stop_instance.sh $(cat instance_id.txt)
