@@ -28,4 +28,5 @@ phases:
     commands:
       - echo "EC2 Splunk Deployment Completed Successfully!"
       - chmod +x scripts/stop_instance.sh
+      - echo "Waiting for 250 seconds..." && sleep 250
       - ./scripts/stop_instance.sh $(cat instance_id.txt)
