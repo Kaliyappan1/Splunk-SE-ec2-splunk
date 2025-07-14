@@ -9,20 +9,14 @@ phases:
       - echo "Downloading dynamic tfvars from S3..."
       - aws s3 cp s3://splunk-deployment-test/$TFVARS_S3_KEY terraform.tfvars
       - echo "Pre-build phase complete."
-      
-  pre_build:
-    commands:
-      - echo "Downloading dynamic tfvars from S3..."
-      - aws s3 cp s3://splunk-deployment-test/$TFVARS_S3_KEY terraform.tfvars
-      - echo "Pre-build phase complete."
-      - export INSTANCE_ID=$(terraform output -raw instance_id)
-      - echo $INSTANCE_ID > instance_id.txt
 
   build:
     commands:
       - chmod +x scripts/check_key.sh
       - terraform init
       - terraform apply -auto-approve
+      - export INSTANCE_ID=$(terraform output -raw instance_id)
+      - echo $INSTANCE_ID > instance_id.txt
 
   post_build:
     commands:
